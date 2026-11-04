@@ -1,10 +1,10 @@
 # Michigan Accountability Tracker
 
-Evidence-first, nonpartisan tracker for Michigan legislative activity. **Prototype, not a verified live dataset.** Records are not endorsements or evidence of campaign-promise fulfillment.
+Evidence-first, nonpartisan tracker for Michigan legislative activity. **Prototype, not a verified live dataset.** Legislative acts and sponsorships are not proof of campaign promise fulfillment or political intent.
 
-## Run
+## Run locally
 
-Requires Python 3.10+; no third-party packages, keys or fees.
+Python 3.10+; no third-party dependencies, payment or API keys.
 
 ```bash
 PYTHONPATH=src python -m unittest discover -s tests -v
@@ -12,20 +12,29 @@ PYTHONPATH=src python -m mi_tracker --per-page 10 --max-pages 1
 python -m http.server 8000 --directory docs
 ```
 
-Open http://localhost:8000. The trial run requests up to 10 bills and five subresources per bill from the [Bill Commons public API](https://billcommons.org/docs/api). Data is stored locally in SQLite and published in `docs/data/bills.json`.
+Open http://localhost:8000. A sample sweep requests up to 10 bills plus five categories of subresources from [Bill Commons](https://billcommons.org/docs/api). Results are persisted locally in SQLite, with a static export at `docs/data/bills.json`.
 
-## Limitations
+## GitHub Actions and Pages
 
-- **Live ingestion is unverified** until the first GitHub Action succeeds and sample results are compared against [official Michigan legislative records](https://www.legislature.mi.gov/).
-- The 10-bill sample is not a complete legislative inventory. Missing data is **unknown**, never evidence of no activity.
-- Sponsorship, proposed bills and voting evidence are indexed without inferring motives, ideology or political promises.
-- The workflow runs weekly and supports manual execution. Publish Pages from `main` / `docs` in repository Settings.
-- Campaign statements, governors, budgets and nationwide elections remain future milestones.
+The workflow runs Mondays 09:21 UTC and supports manual dispatch. To publish the website, go to **Settings → Pages → Deploy from a branch → main → /docs**. The job requires `contents: write` to commit new public JSON snapshots. Review the first workflow run for API compatibility and sample quality.
 
-Sources and methodology: [Bill Commons](https://billcommons.org/methodology), [Open States](https://open.pluralpolicy.com/data/), [Michigan Legislature](https://www.legislature.mi.gov/).
+## Evidence principles
 
-## Acceptance criteria
+- Record introduced bills even when they never pass.
+- Distinguish sponsor, cosponsor, vote, bill text and legislative action.
+- Show original citations and ingestion health.
+- Treat absence of a record as unknown coverage.
+- Avoid assigning intent, ideological labels or promise scores without independently validated evidence.
+- Respect public sources' access restrictions, rate limits and robots rules.
 
-Run collector successfully in GitHub Actions, validate five distinct records against official Michigan source, verify bill sponsorship and versions, then expand coverage. Log source mismatches rather than silently treating a blank field as absent activity.
+## Current limitations
 
-MIT licensed. No CAPTCHA bypass or rate-limit evasion.
+- **Live API ingestion and Michigan completeness are not yet verified.** The sample workflow is an experiment, not a production pipeline.
+- Actual endpoint shapes and fields may differ from the collector assumptions. Errors should be surfaced and corrected, never silently interpreted as no evidence.
+- Only the first 10 bills are sampled; this is not an inventory of legislators or legislative activity.
+- Governors, budgets, directed-spending disclosures, amendments, campaign quotes and federal races are future work.
+- Cross-check at least five bills against [official Michigan legislative records](https://www.legislature.mi.gov/) before reporting validated coverage.
+
+Resources: [Bill Commons](https://billcommons.org/methodology), [Open States](https://open.pluralpolicy.com/data/), [Michigan Legislature](https://www.legislature.mi.gov/).
+
+MIT licensed.

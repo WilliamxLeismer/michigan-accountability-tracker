@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Michigan Legislative Evidence | Prototype</title>
+<style>
+:root{font-family:system-ui,sans-serif;color-scheme:light dark}
+body{max-width:1000px;margin:2rem auto;padding:0 1rem;line-height:1.55}
+header{border-bottom:1px solid gray} .notice{border-left:4px solid orange;padding:1rem}
+input,select{font:inherit;padding:.4rem} article{border-bottom:1px solid gray;padding:1rem 0}
+a{overflow-wrap:anywhere} summary{cursor:pointer} small{opacity:.8}
+</style></head><body>
+<header><h1>Michigan Legislative Evidence</h1>
+<p>Experimental nonpartisan records index. Sponsorship is not passage; policy records do not establish motive or campaign promises.</p>
+<p class="notice" id="health">Dataset not verified. Loading...</p></header>
+<main><label>Find bill <input type="search" id="q" placeholder="Bill number or title"></label>
+<label>Evidence <select id="kind"><option value="">All</option><option>sponsors</option>
+<option>actions</option><option>versions</option><option>votes</option><option>documents</option>
+</select></label><p id="count"></p><div id="bills"></div></main>
+<footer><small>Missing evidence is unknown coverage, not proof of absence.
+Sources: <a href="https://billcommons.org/docs/api">Bill Commons API</a> and links supplied by its records.
+Check the <a href="https://www.legislature.mi.gov/">official Michigan Legislature</a> before relying on these records.
+No political scores or motive judgments are generated.</small></footer>
+<script>
+const q=document.querySelector('#q'),kind=document.querySelector('#kind');
+const output=document.querySelector('#bills'),count=document.querySelector('#count');
+let bills=[];
+function node(tag,text){const el=document.createElement(tag);el.textContent=String(text??'');return el;}
+function render(){
+ output.replaceChildren();
+ const term=q.value.toLowerCase();
+ const filtered=bills.filter(b=>(String(b.identifier)+' '+String(b.title||'')).toLowerCase().includes(term)
+   &&(!kind.value||(b.evidence||[]).some(e=>e.category===kind.value)));
+ count.textContent=`${filtered.length} of ${bills.length} bills shown`;
+ for(const b of filtered){
+   const article=node('article','');
+   article.append(node('h2',`${b.identifier}: ${b.title||'Title unavailable'}`));
+   article.append(node('p',`Session: ${b.session||'Unverified'} · Retrieved: ${b.fetched_at||'Unknown'}`));
+   if(b.source_url&&/^https:\/\//.test(b.source_url)){
+     const link=node('a','Original source');link.href=b.source_url;link.rel='noopener noreferrer';article.append(link);
+   }
+   const detail=node('details','');
+   detail.append(node('summary',`${(b.evidence||[]).length} evidence records`));
+   for(const e of (b.evidence||[]).filter(x=>!kind.value||x.category===kind.value)){
+     const p=node('p',`[${e.category}] ${e.occurred_at||'Undated'} · ${e.label} · ${e.actor||'Unspecified'}`);
+     if(e.source_url&&/^https:\/\//.test(e.source_url)){
+       const link=node('a',' [source]');link.href=e.source_url;link.rel='noopener noreferrer';p.append(link);
+     }
+     detail.append(p);
+   }
+   article.append(detail);output.append(article);
+ }
+}
+q.addEventListener('input',render);kind.addEventListener('change',render);
+fetch('./data/bills.json',{cache:'no-store'})
+ .then(r=>{if(!r.ok)throw Error('Data unavailable');return r.json();})
+ .then(data=>{
+   bills=data.bills||[];
+   const run=data.run||{};
+   document.querySelector('#health').textContent=
+     `Last run: ${run.completed_at||'not run'} · ${run.success===1?'No reported ingestion warnings':'Incomplete or unverified'} · ${run.bills_seen||0} bills sampled · ${run.error||'No reported failures'}`;
+   render();
+ })
+ .catch(err=>{document.querySelector('#health').textContent='No dataset: '+err.message;});
+</script></body></html>

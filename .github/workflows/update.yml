@@ -1,0 +1,33 @@
+name: Weekly Michigan evidence collection
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '21 9 * * 1'
+
+permissions:
+  contents: write
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run unit tests
+        run: PYTHONPATH=src python -m unittest discover -s tests -v
+      - name: Collect Michigan sample
+        id: ingest
+        continue-on-error: true
+        run: PYTHONPATH=src python -m mi_tracker --per-page 10 --max-pages 1
+      - name: Publish data snapshot
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/data/bills.json
+          git diff --cached --quiet || (git commit -m 'Update Michigan evidence snapshot' && git push)
+      - name: Fail when collection failed
+        if: steps.ingest.outcome != 'success'
+        run: exit 1
